@@ -1,0 +1,15 @@
+body {
+    margin: 0;
+    background-color: powderblue;
+}
+
+.header {
+    a {
+        text-decoration: none;
+        color: initial;
+    }
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
