@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Identity;
 
 namespace Arch.Repositories;
 
-public class UserRepository(ILogger<UserRepository> logger)
+public class UserRepository
     : ArchRepository,
         IUserStore<IdentityUser>,
         IUserPasswordStore<IdentityUser>
@@ -15,38 +15,27 @@ public class UserRepository(ILogger<UserRepository> logger)
     ) =>
         Connection(c =>
             Result
-                .Try(() =>
-                {
-                    logger.LogInformation("creating user");
-                    return c.ExecuteAsync(
-                        """
-                        INSERT INTO user (Id, UserName, NormalizedUserName, PasswordHash)
-                        VALUES (@Id, @UserName, @NormalizedUserName, @PasswordHash)
-                        """,
-                        user
-                    );
-                })
+                .Try(
+                    () =>
+                        c.ExecuteAsync(
+                            """
+                            INSERT INTO user (Id, UserName, NormalizedUserName, PasswordHash)
+                            VALUES (@Id, @UserName, @NormalizedUserName, @PasswordHash)
+                            """,
+                            user
+                        )
+                )
                 .Finally(r =>
-                {
-                    logger.LogInformation("logged user");
-                    if (r.IsFailure)
-                        logger.LogError(
-                            "failed to create user {error}",
-                            r.Error
-                        );
-                    return r.IsSuccess
+                    r.IsSuccess
                         ? IdentityResult.Success
-                        : IdentityResult.Failed();
-                })
+                        : IdentityResult.Failed()
+                )
         );
 
     public Task<IdentityResult> DeleteAsync(
         IdentityUser user,
         CancellationToken cancellationToken
-    )
-    {
-        throw new NotImplementedException();
-    }
+    ) => throw new NotImplementedException();
 
     public void Dispose() { }
 
@@ -67,10 +56,8 @@ public class UserRepository(ILogger<UserRepository> logger)
     public Task<IdentityUser?> FindByNameAsync(
         string normalizedUserName,
         CancellationToken cancellationToken
-    )
-    {
-        logger.LogInformation("find {username}", normalizedUserName);
-        return Connection(c =>
+    ) =>
+        Connection(c =>
             c.QuerySingleOrDefaultAsync<IdentityUser?>(
                 """
                 SELECT * FROM user
@@ -79,7 +66,6 @@ public class UserRepository(ILogger<UserRepository> logger)
                 new { normalizedUserName }
             )
         );
-    }
 
     public Task<string?> GetNormalizedUserNameAsync(
         IdentityUser user,
@@ -122,7 +108,12 @@ public class UserRepository(ILogger<UserRepository> logger)
     public Task<Result<IEnumerable<IdentityUser>>> GetUsers() =>
         Connection(c =>
             Result.Try(
-                () => c.QueryAsync<IdentityUser>("""SELECT * FROM user;""")
+                () =>
+                    c.QueryAsync<IdentityUser>(
+                        """
+                        SELECT *FROM user;
+                        """
+                    )
             )
         );
 
@@ -152,8 +143,5 @@ public class UserRepository(ILogger<UserRepository> logger)
     public Task<IdentityResult> UpdateAsync(
         IdentityUser user,
         CancellationToken cancellationToken
-    )
-    {
-        throw new NotImplementedException();
-    }
+    ) => throw new NotImplementedException();
 }

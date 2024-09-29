@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Arch.Consts;
 using Arch.Frags;
 using CSharpFunctionalExtensions;
@@ -31,20 +30,17 @@ public class AccountController(
 
     [HttpPost]
     [Route(Routes.Login)]
-    public async Task<IActionResult> OnLoginAsync(string? returnUrl = null)
-    {
-        var result = await signInManager.PasswordSignInAsync(
-            Request.Form.Single(e => e.Key == "username").Value.ToString(),
-            Request.Form.Single(e => e.Key == "password").Value.ToString(),
-            false,
-            false
-        );
-        if (result.Succeeded)
-        {
-            return RedirectPermanent(returnUrl ?? Routes.Root);
-        }
-        throw new Exception($"failed to login {result}");
-    }
+    public async Task<IActionResult> OnLoginAsync(string? returnUrl = null) =>
+        (
+            await signInManager.PasswordSignInAsync(
+                Request.Form.Single(e => e.Key == "username").Value.ToString(),
+                Request.Form.Single(e => e.Key == "password").Value.ToString(),
+                false,
+                false
+            )
+        ).Succeeded
+            ? RedirectPermanent(returnUrl ?? Routes.Root)
+            : throw new Exception($"failed to login");
 
     [HttpGet]
     [Route(Routes.Register)]
@@ -80,10 +76,9 @@ public class AccountController(
 
     [HttpPost]
     [Route(Routes.Logout)]
-    public async Task<IActionResult> OnLogoutAsync(string? returnUrl = null)
+    public async Task<IActionResult> OnLogoutAsync()
     {
-        var a = User.Identity?.IsAuthenticated ?? false;
         await signInManager.SignOutAsync();
-        return LocalRedirect(returnUrl ?? Routes.Root);
+        return LocalRedirect(Routes.Root);
     }
 }

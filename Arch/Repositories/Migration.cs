@@ -16,32 +16,17 @@ public static class MigrationExtensions
 
 public class MigrationRepository : ArchRepository
 {
-    const string userTable = """
-        CREATE TABLE IF NOT EXISTS user (
-            Id TEXT NOT NULL,
-            UserName TEXT,
-            NormalizedUserName TEXT,
-            PasswordHash TEXT
+    public void Execute() =>
+        Connection(c =>
+            c.Execute(
+                """
+                CREATE TABLE IF NOT EXISTS user (
+                    Id TEXT NOT NULL,
+                    UserName TEXT,
+                    NormalizedUserName TEXT,
+                    PasswordHash TEXT
+                );
+                """
+            )
         );
-        """;
-
-    // Id TEXT NOT NULL,
-    // UserName TEXT,
-    // NormalizedUserName TEXT,
-    // PasswordHash TEXT,
-    // Email TEXT,
-    // NormalizedEmail TEXT,
-    // EmailConfirmed INTEGER NOT NULL,
-    // SecurityStamp TEXT,
-    // ConcurrencyStamp TEXT,
-    // PhoneNumber TEXT,
-    // PhoneNumberConfirmed INTEGER NOT NULL,
-    // TwoFactorEnabled INTEGER NOT NULL,
-    // LockoutEnd TEXT,
-    // LockoutEnabled INTEGER NOT NULL,
-    // AccessFailedCount INTEGER NOT NULL,
-    // UserType INTEGER NOT NULL,
-    // IsActive INTEGER NOT NULL,
-
-    public void Execute() => Connection(c => c.Execute(userTable));
 }
