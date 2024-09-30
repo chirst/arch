@@ -9,16 +9,17 @@ using Microsoft.AspNetCore.Mvc;
 namespace Arch.Controllers;
 
 [Controller]
-public class IndexController(UserRepository userRepository) : ControllerBase
+public class IndexController() : ControllerBase
 {
     [HttpGet]
     [Route(Routes.Root)]
-    public Task<Microsoft.AspNetCore.Http.IResult> GetIndex() =>
-        userRepository
-            .GetUsers()
-            .Map(us => us.Select(u => H.li($"{u.Id} {u.UserName}")))
-            .Map(users => Frag.Layout(User, H.h2("Index"), users).ToResult())
-            .Finally(result => result.Value);
+    public Microsoft.AspNetCore.Http.IResult GetIndex() =>
+        Frag.Layout(
+                User,
+                H.h2("Index"),
+                H.a(a => a.href("/protected"), "Go to protected route")
+            )
+            .ToResult();
 
     [HttpGet]
     [Authorize]

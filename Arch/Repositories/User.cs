@@ -32,12 +32,11 @@ public class UserRepository
                 )
         );
 
+    // Should delete from database by user id.
     public Task<IdentityResult> DeleteAsync(
         IdentityUser user,
         CancellationToken cancellationToken
     ) => throw new NotImplementedException();
-
-    public void Dispose() { }
 
     public Task<IdentityUser?> FindByIdAsync(
         string userId,
@@ -105,18 +104,6 @@ public class UserRepository
         CancellationToken cancellationToken
     ) => Task.FromResult(user.UserName);
 
-    public Task<Result<IEnumerable<IdentityUser>>> GetUsers() =>
-        Connection(c =>
-            Result.Try(
-                () =>
-                    c.QueryAsync<IdentityUser>(
-                        """
-                        SELECT *FROM user;
-                        """
-                    )
-            )
-        );
-
     public Task<bool> HasPasswordAsync(
         IdentityUser user,
         CancellationToken cancellationToken
@@ -140,8 +127,11 @@ public class UserRepository
         CancellationToken cancellationToken
     ) => Task.FromResult(user.UserName = userName);
 
+    // UpdateAsync should update user properties by user id.
     public Task<IdentityResult> UpdateAsync(
         IdentityUser user,
         CancellationToken cancellationToken
     ) => throw new NotImplementedException();
+
+    public void Dispose() { }
 }
