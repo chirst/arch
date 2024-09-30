@@ -19,7 +19,7 @@ public class UserRepository
                     () =>
                         c.ExecuteAsync(
                             """
-                            INSERT INTO user (Id, UserName, NormalizedUserName, PasswordHash)
+                            INSERT INTO IdentityUser (Id, UserName, NormalizedUserName, PasswordHash)
                             VALUES (@Id, @UserName, @NormalizedUserName, @PasswordHash)
                             """,
                             user
@@ -45,7 +45,7 @@ public class UserRepository
         Connection(c =>
             c.QuerySingleOrDefaultAsync<IdentityUser?>(
                 """
-                SELECT * FROM user
+                SELECT * FROM IdentityUser
                 WHERE Id = @Id
                 """,
                 new { Id = userId }
@@ -59,7 +59,7 @@ public class UserRepository
         Connection(c =>
             c.QuerySingleOrDefaultAsync<IdentityUser?>(
                 """
-                SELECT * FROM user
+                SELECT * FROM IdentityUser 
                 WHERE NormalizedUserName = @normalizedUserName
                 """,
                 new { normalizedUserName }
@@ -78,7 +78,7 @@ public class UserRepository
         Connection(c =>
             c.QuerySingleOrDefaultAsync<string?>(
                 """
-                SELECT PasswordHash FROM user
+                SELECT PasswordHash FROM IdentityUser
                 WHERE Id = @Id
                 """,
                 user
@@ -92,7 +92,7 @@ public class UserRepository
         Connection(c =>
             c.QuerySingleAsync<string>(
                 """
-                SELECT Id FROM user
+                SELECT Id FROM IdentityUser
                 WHERE Id = @Id
                 """,
                 user

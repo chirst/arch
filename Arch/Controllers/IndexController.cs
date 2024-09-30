@@ -4,12 +4,16 @@ using Arch.Repositories;
 using CSharpFunctionalExtensions;
 using Hyperlinq;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Arch.Controllers;
 
 [Controller]
-public class IndexController() : ControllerBase
+public class IndexController(
+    UserRepository userRepository,
+    UserManager<IdentityUser> userManager
+) : ControllerBase
 {
     [HttpGet]
     [Route(Routes.Root)]
@@ -19,11 +23,34 @@ public class IndexController() : ControllerBase
                 H.h2("Index"),
                 H.a(a => a.href("/protected"), "Go to protected route")
             )
-            .ToResult();
+            .ToHtmlResponse();
 
     [HttpGet]
     [Authorize]
     [Route("/protected")]
-    public Microsoft.AspNetCore.Http.IResult GetProtected() =>
-        Frag.Layout(User, H.h2("protected")).ToResult();
+    public async Task<Microsoft.AspNetCore.Http.IResult> GetProtected(
+        CancellationToken cancellationToken
+    ) =>
+        await userRepository
+            .FindByIdAsync(
+                Maybe.From(userManager.GetUserId(User)).GetValueOrThrow(),
+                cancellationToken
+            )
+            .ToResultAsync("user not found")
+            .Map(user =>
+                Frag.Layout(
+                    User,
+                    H.h2("protected"),
+                    H.div($"ID: {user.Id}"),
+                    H.div($"Username: {user.UserName}"),
+                    H.div($"Normalized Username: {user.NormalizedUserName}"),
+                    H.div($"Password Hash: {user.PasswordHash}")
+                )
+            )
+            .Finally(r =>
+                r.IsSuccess
+                    ? r.Value.ToHtmlResponse()
+                    : Frag.Layout(User, H.h2("protected"), H.div(r.Error))
+                        .ToHtmlResponse()
+            );
 }

@@ -26,7 +26,7 @@ public class AccountController(
                     H.input(a => a.type("submit").value("Login"))
                 )
             )
-            .ToResult();
+            .ToHtmlResponse();
 
     [HttpPost]
     [Route(Routes.Login)]
@@ -55,7 +55,7 @@ public class AccountController(
                     H.input(a => a.type("submit").value("Register"))
                 )
             )
-            .ToResult();
+            .ToHtmlResponse();
 
     [HttpPost]
     [Route(Routes.Register)]

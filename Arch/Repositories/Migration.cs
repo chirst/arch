@@ -16,17 +16,16 @@ public static class MigrationExtensions
 
 public class MigrationRepository : ArchRepository
 {
-    public void Execute() =>
-        Connection(c =>
-            c.Execute(
-                """
-                CREATE TABLE IF NOT EXISTS user (
-                    Id TEXT NOT NULL,
-                    UserName TEXT,
-                    NormalizedUserName TEXT,
-                    PasswordHash TEXT
-                );
-                """
-            )
+    // IdentityUser has non standard naming to make it easier to map to the
+    // AspNetCore IdentityUser model.
+    private const string userTable = """
+        CREATE TABLE IF NOT EXISTS IdentityUser (
+            Id TEXT NOT NULL,
+            UserName TEXT,
+            NormalizedUserName TEXT,
+            PasswordHash TEXT
         );
+        """;
+
+    public void Execute() => Connection(c => c.Execute(userTable));
 }
