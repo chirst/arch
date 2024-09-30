@@ -1,9 +1,12 @@
+using System.Security.Policy;
 using Arch.Consts;
 using Arch.Frags;
 using CSharpFunctionalExtensions;
 using Hyperlinq;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.VisualBasic;
 
 namespace Arch.Controllers;
 
@@ -15,16 +18,21 @@ public class AccountController(
 {
     [HttpGet]
     [Route(Routes.Login)]
-    public Microsoft.AspNetCore.Http.IResult GetLogin() =>
+    public Microsoft.AspNetCore.Http.IResult GetLogin(bool e = false) =>
         Frag.Layout(
                 User,
                 H.h2("login"),
                 H.form(
                     f => f.method("POST").action(Routes.Login),
-                    H.input(a => a.type("text").name("username")),
-                    H.input(a => a.type("password").name("password")),
+                    H.input(a =>
+                        a.type("text").name("username").required(true)
+                    ),
+                    H.input(a =>
+                        a.type("password").name("password").required(true)
+                    ),
                     H.input(a => a.type("submit").value("Login"))
-                )
+                ),
+                e ? H.div("Username or password is incorrect") : H.span()
             )
             .ToHtmlResponse();
 
@@ -40,20 +48,29 @@ public class AccountController(
             )
         ).Succeeded
             ? RedirectPermanent(returnUrl ?? Routes.Root)
-            : throw new Exception($"failed to login");
+            : RedirectPermanent(
+                QueryHelpers.AddQueryString(Routes.Login, "e", "true")
+            );
 
     [HttpGet]
     [Route(Routes.Register)]
-    public Microsoft.AspNetCore.Http.IResult GetRegister() =>
+    public Microsoft.AspNetCore.Http.IResult GetRegister(
+        string? error = null
+    ) =>
         Frag.Layout(
                 User,
                 H.h2("register"),
                 H.form(
                     f => f.method("POST").action(Routes.Register),
-                    H.input(a => a.type("text").name("username")),
-                    H.input(a => a.type("password").name("password")),
+                    H.input(a =>
+                        a.type("text").name("username").required(true)
+                    ),
+                    H.input(a =>
+                        a.type("password").name("password").required(true)
+                    ),
                     H.input(a => a.type("submit").value("Register"))
-                )
+                ),
+                error is null ? H.span() : H.div(error)
             )
             .ToHtmlResponse();
 
@@ -68,9 +85,13 @@ public class AccountController(
             Request.Form.Single(e => e.Key == "password").Value.ToString()
         );
         return res.Succeeded
-            ? Redirect(Routes.Login)
-            : throw new Exception(
-                string.Join(", ", res.Errors.Select(e => e.Description))
+            ? RedirectPermanent(Routes.Login)
+            : RedirectPermanent(
+                QueryHelpers.AddQueryString(
+                    Routes.Register,
+                    "error",
+                    res.Errors.First().Description
+                )
             );
     }
 
