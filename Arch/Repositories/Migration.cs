@@ -23,7 +23,10 @@ public class MigrationRepository : ArchRepository
             Id TEXT NOT NULL,
             UserName TEXT,
             NormalizedUserName TEXT,
-            PasswordHash TEXT
+            PasswordHash TEXT,
+            LockoutEnabled INT NOT NULL,
+            AccessFailedCount INT NOT NULL,
+            LockoutEnd DATETIME
         );
         """;
 

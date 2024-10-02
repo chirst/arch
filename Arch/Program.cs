@@ -10,7 +10,12 @@ builder.Services.AddScoped<MigrationRepository>();
 builder.Services.AddScoped<UserRepository>();
 
 builder
-    .Services.AddIdentity<IdentityUser, IdentityRole>()
+    .Services.AddIdentity<IdentityUser, IdentityRole>(options =>
+    {
+        options.Lockout.AllowedForNewUsers = true;
+        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+        options.Lockout.MaxFailedAccessAttempts = 5;
+    })
     .AddUserStore<UserRepository>()
     .AddRoleStore<RoleRepository>()
     .AddDefaultTokenProviders();

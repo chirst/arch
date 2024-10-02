@@ -18,7 +18,7 @@ public class AccountController(
 {
     [HttpGet]
     [Route(Routes.Login)]
-    public Microsoft.AspNetCore.Http.IResult GetLogin(bool e = false) =>
+    public Microsoft.AspNetCore.Http.IResult GetLogin(int? e = null) =>
         Frag.Layout(
                 User,
                 H.h2("login"),
@@ -32,25 +32,40 @@ public class AccountController(
                     ),
                     H.input(a => a.type("submit").value("Login"))
                 ),
-                e ? H.div("Username or password is incorrect") : H.span()
+                e switch
+                {
+                    1 => H.div("User is locked out"),
+                    2 => H.div("User is not allowed to sign in"),
+                    _ => H.div("Username or password is incorrect"),
+                }
             )
             .ToHtmlResponse();
 
     [HttpPost]
     [Route(Routes.Login)]
-    public async Task<IActionResult> OnLoginAsync(string? returnUrl = null) =>
-        (
-            await signInManager.PasswordSignInAsync(
-                Request.Form.Single(e => e.Key == "username").Value.ToString(),
-                Request.Form.Single(e => e.Key == "password").Value.ToString(),
-                true,
-                false
+    public async Task<IActionResult> OnLoginAsync(string? returnUrl = null)
+    {
+        var res = await signInManager.PasswordSignInAsync(
+            Request.Form.Single(e => e.Key == "username").Value.ToString(),
+            Request.Form.Single(e => e.Key == "password").Value.ToString(),
+            isPersistent: true,
+            lockoutOnFailure: true
+        );
+        if (res.Succeeded)
+            return RedirectPermanent(returnUrl ?? Routes.Root);
+        return RedirectPermanent(
+            QueryHelpers.AddQueryString(
+                Routes.Login,
+                "e",
+                res switch
+                {
+                    { IsLockedOut: true } => "1",
+                    { IsNotAllowed: true } => "2",
+                    _ => "3",
+                }
             )
-        ).Succeeded
-            ? RedirectPermanent(returnUrl ?? Routes.Root)
-            : RedirectPermanent(
-                QueryHelpers.AddQueryString(Routes.Login, "e", "true")
-            );
+        );
+    }
 
     [HttpGet]
     [Route(Routes.Register)]

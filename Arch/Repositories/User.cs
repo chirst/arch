@@ -4,10 +4,11 @@ using Microsoft.AspNetCore.Identity;
 
 namespace Arch.Repositories;
 
-public class UserRepository
+public class UserRepository(ILogger<UserRepository> logger)
     : ArchRepository,
         IUserStore<IdentityUser>,
-        IUserPasswordStore<IdentityUser>
+        IUserPasswordStore<IdentityUser>,
+        IUserLockoutStore<IdentityUser>
 {
     public Task<IdentityResult> CreateAsync(
         IdentityUser user,
@@ -19,17 +20,33 @@ public class UserRepository
                     () =>
                         c.ExecuteAsync(
                             """
-                            INSERT INTO IdentityUser (Id, UserName, NormalizedUserName, PasswordHash)
-                            VALUES (@Id, @UserName, @NormalizedUserName, @PasswordHash)
+                            INSERT INTO IdentityUser (
+                                Id, 
+                                UserName,
+                                NormalizedUserName,
+                                PasswordHash,
+                                LockoutEnabled,
+                                AccessFailedCount
+                            )
+                            VALUES (
+                                @Id,
+                                @UserName,
+                                @NormalizedUserName,
+                                @PasswordHash,
+                                @LockoutEnabled,
+                                @AccessFailedCount
+                            )
                             """,
                             user
                         )
                 )
                 .Finally(r =>
-                    r.IsSuccess
-                        ? IdentityResult.Success
-                        : IdentityResult.Failed()
-                )
+                {
+                    if (r.IsSuccess)
+                        return IdentityResult.Success;
+                    logger.LogError(r.Error);
+                    return IdentityResult.Failed();
+                })
         );
 
     // Should delete from database by user id.
@@ -37,6 +54,8 @@ public class UserRepository
         IdentityUser user,
         CancellationToken cancellationToken
     ) => throw new NotImplementedException();
+
+    public void Dispose() { }
 
     public Task<IdentityUser?> FindByIdAsync(
         string userId,
@@ -127,11 +146,102 @@ public class UserRepository
         CancellationToken cancellationToken
     ) => Task.FromResult(user.UserName = userName);
 
-    // UpdateAsync should update user properties by user id.
     public Task<IdentityResult> UpdateAsync(
         IdentityUser user,
         CancellationToken cancellationToken
-    ) => throw new NotImplementedException();
+    ) =>
+        Connection(c =>
+            Result
+                .Try(
+                    () =>
+                        c.ExecuteAsync(
+                            """
+                            UPDATE IdentityUser
+                            SET Id = @Id,
+                                LockoutEnabled = @LockoutEnabled,
+                                AccessFailedCount = @AccessFailedCount,
+                                LockoutEnd = @LockoutEnd
+                            WHERE Id = @Id
+                            """,
+                            new
+                            {
+                                user.Id,
+                                user.LockoutEnabled,
+                                user.AccessFailedCount,
+                                LockoutEnd = user.LockoutEnd?.ToString("o"),
+                            }
+                        )
+                )
+                .Finally(r =>
+                {
+                    if (r.IsSuccess)
+                        return IdentityResult.Success;
+                    logger.LogError(r.Error);
+                    return IdentityResult.Failed();
+                })
+        );
 
-    public void Dispose() { }
+    public Task<DateTimeOffset?> GetLockoutEndDateAsync(
+        IdentityUser user,
+        CancellationToken cancellationToken
+    ) => Task.FromResult(user.LockoutEnd);
+
+    public Task SetLockoutEndDateAsync(
+        IdentityUser user,
+        DateTimeOffset? lockoutEnd,
+        CancellationToken cancellationToken
+    )
+    {
+        user.LockoutEnd = lockoutEnd;
+        return Task.CompletedTask;
+    }
+
+    public Task<int> IncrementAccessFailedCountAsync(
+        IdentityUser user,
+        CancellationToken cancellationToken
+    )
+    {
+        logger.LogInformation("before count {user}", user.AccessFailedCount);
+        user.AccessFailedCount++;
+        logger.LogInformation(
+            "incremented count to {user}",
+            user.AccessFailedCount
+        );
+        return Task.FromResult(user.AccessFailedCount);
+    }
+
+    public Task ResetAccessFailedCountAsync(
+        IdentityUser user,
+        CancellationToken cancellationToken
+    )
+    {
+        user.AccessFailedCount = 0;
+        return Task.CompletedTask;
+    }
+
+    public Task<int> GetAccessFailedCountAsync(
+        IdentityUser user,
+        CancellationToken cancellationToken
+    )
+    {
+        return Task.FromResult(user.AccessFailedCount);
+    }
+
+    public Task<bool> GetLockoutEnabledAsync(
+        IdentityUser user,
+        CancellationToken cancellationToken
+    )
+    {
+        return Task.FromResult(user.LockoutEnabled);
+    }
+
+    public Task SetLockoutEnabledAsync(
+        IdentityUser user,
+        bool enabled,
+        CancellationToken cancellationToken
+    )
+    {
+        user.LockoutEnabled = enabled;
+        return Task.CompletedTask;
+    }
 }
