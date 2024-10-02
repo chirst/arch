@@ -43,7 +43,7 @@ public class AccountController(
             await signInManager.PasswordSignInAsync(
                 Request.Form.Single(e => e.Key == "username").Value.ToString(),
                 Request.Form.Single(e => e.Key == "password").Value.ToString(),
-                false,
+                true,
                 false
             )
         ).Succeeded
